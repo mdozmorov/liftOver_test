@@ -1,0 +1,90 @@
+---
+title: "LiftOver test"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# Set up the environment
+library(knitr)
+opts_chunk$set(cache.path='cache/', fig.path='img/', cache=T, tidy=T, fig.keep='high', echo=T, dpi=100, warnings=F, message=F, comment=NA, warning=F, results='as.is', fig.width = 10, fig.height = 6)
+options(stringsAsFactors = FALSE)
+```
+
+```{r}
+library(GenomicRanges)
+library(rtracklayer)
+library(liftOver)
+library(R.utils)
+```
+
+# liftover using R
+
+```{r}
+# Make a GRanges object from this sample range
+gr <- GRanges(seqnames = Rle(c("chr3")),
+                 ranges = IRanges(start = 195084601, end = 195195500))
+# The chain file ("hg19ToHg38.over.chain") can be found at: 
+# http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/
+path <- "http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz"
+download.file(path, "hg19ToHg38.over.chain.gz")
+gunzip("hg19ToHg38.over.chain.gz", skip = TRUE)
+chain = import.chain("hg19ToHg38.over.chain")
+ 
+gr_lift = liftOver(gr, chain)
+gr_lift[[1]]
+```
+
+This results in 21 ranges for the single given range. Note the start coordinate of the first range and the end coordinate of the last range: 195363872 and 195474797 
+
+
+# liftover using the web client:
+
+Navigate to the web based tool @ https://genome.ucsc.edu/cgi-bin/hgLiftOver and submit the following coordinates (same as in above R chunk) in the submission box: 
+
+`chr3 195084601 195195500` (OR formatted as `chr3:195084601-195195500` also works as input.) 
+
+Select "Human" in both the Original and New Genome dropdown menus, 
+and select "Feb. 2009 (GRCh37/hg19)" for the Original Assembly dropdown 
+and "Dec. 2013 (GRCh38/hg38)" for the New Assembly. Click Submit
+
+The web tool returns a downloadable text file that should read: 
+
+`chr3	195363872	195474797` (Or `chr3:195363872-195474797`, if it was submitted in the alternate format)
+
+Note that these coordinates match first start coordinate and 
+the last end coordinate from the 21 ranges produced by liftover in R. 
+
+
+# liftOver in a terminal
+
+Instructions are here: http://genometoolbox.blogspot.com/2013/11/install-liftover-locally-on-unix.html 
+but also summarized below.
+
+Run `liftOver` on a Mac by downloading it @ http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.x86_64/ 
+and scrolling down to and downloading the `liftOver` package. 
+Once downloaded move it to your working directory, and modify the permissions 
+to make executable (i.e. `chmod u+x liftOver`). Make an input file with the coordinates, (e.g make a file `gr.bed` containing one line, tab-separated: 
+
+```
+chr3    195084601   195195500
+```
+
+To run liftOver, the usage is:
+
+```
+liftOver gr.bed hg19ToHg38.over.chain gr_lift.bed gr_lift.unmapped
+```
+
+This returns the same results as the web tool. The file `gr_lift.bed` contains 
+
+```
+chr3    195363872       195474797
+```
+
+```{r session_info}
+sessionInfo()
+```
+
+
